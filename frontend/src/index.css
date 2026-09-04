@@ -255,12 +255,12 @@ input:focus {
 }
 
 .dash-grid {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   display: grid;
   gap: 0.9rem;
   grid-template-columns: 1fr;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (min-width: 700px) {
@@ -277,13 +277,25 @@ input:focus {
   .dash-cell--meme { grid-area: meme; }
 }
 
+@media (min-width: 1100px) {
+  .dash-grid {
+    grid-template-columns: 1.15fr 1.15fr 0.9fr;
+    grid-template-rows: minmax(260px, 1fr) minmax(280px, 1fr);
+    grid-template-areas:
+      "news prices meme"
+      "insight insight meme";
+    min-height: calc(100vh - 140px);
+  }
+}
+
 .dash-cell {
   min-width: 0;
+  display: flex;
 }
 
 .dash-cell > .section-card {
+  flex: 1;
   width: 100%;
-  height: auto;
 }
 
 .section-card {
@@ -295,7 +307,7 @@ input:focus {
   animation: rise 0.5s ease-out both;
   display: flex;
   flex-direction: column;
-  height: auto;
+  min-height: 240px;
 }
 
 .section-card:nth-child(2),
@@ -328,7 +340,9 @@ input:focus {
 }
 
 .section-card__body {
+  flex: 1;
   min-height: 0;
+  overflow: auto;
 }
 
 .pill {
@@ -451,7 +465,7 @@ input:focus {
 
 .meme-figure img {
   width: 100%;
-  max-height: 180px;
+  max-height: 220px;
   object-fit: cover;
   border-radius: 14px;
   border: 1px solid var(--line);
