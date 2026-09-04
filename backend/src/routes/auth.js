@@ -131,6 +131,53 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, name, newPassword } = req.body;
+    if (!email || !name || !newPassword) {
+      return sendError(
+        res,
+        400,
+        'MISSING_FIELDS',
+        'Please fill in full name, email, and new password.'
+      );
+    }
+    if (!isValidFullName(name)) {
+      return sendError(
+        res,
+        400,
+        'INVALID_FULL_NAME',
+        'Please enter your full name (first and last name).'
+      );
+    }
+    if (!isValidEmail(email)) {
+      return sendError(res, 400, 'INVALID_EMAIL', 'Please enter a valid email address.');
+    }
+    if (String(newPassword).length < 6) {
+      return sendError(res, 400, 'WEAK_PASSWORD', 'Password must be at least 6 characters.');
+    }
+
+    const user = await User.findOne({ email: String(email).toLowerCase().trim() });
+    if (!user) {
+      return sendError(res, 404, 'USER_NOT_FOUND', 'No account found with this email.');
+    }
+
+    const enteredName = normalizeFullName(name).toLowerCase();
+    const storedName = normalizeFullName(user.name).toLowerCase();
+    if (enteredName !== storedName) {
+      return sendError(res, 401, 'NAME_MISMATCH', 'Full name does not match this account.');
+    }
+
+    user.passwordHash = await bcrypt.hash(String(newPassword), 10);
+    await user.save();
+
+    res.json({ message: 'Password updated successfully. You can sign in now.', code: 'PASSWORD_RESET' });
+  } catch (err) {
+    console.error(err);
+    return sendError(res, 500, 'SERVER_ERROR', 'Password reset failed. Please try again.');
+  }
+});
+
 router.get('/me', async (req, res) => {
   try {
     const header = req.headers.authorization || '';

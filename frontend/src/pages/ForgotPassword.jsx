@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 function isValidFullName(name) {
@@ -14,14 +15,15 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 }
 
-export default function Login() {
-  const { login, isAuthenticated, user } = useAuth();
+export default function ForgotPassword() {
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [errorCode, setErrorCode] = useState('');
+  const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState(false);
 
   if (isAuthenticated) {
@@ -32,12 +34,10 @@ export default function Login() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    setErrorCode('');
+    setSuccess('');
     try {
-      if (!fullName || !email || !password) {
-        throw Object.assign(new Error('Please fill in full name, email, and password.'), {
-          code: 'MISSING_FIELDS',
-        });
+      if (!fullName || !email || !newPassword || !confirmPassword) {
+        throw Object.assign(new Error('Please fill in all fields.'), { code: 'MISSING_FIELDS' });
       }
       if (!isValidFullName(fullName)) {
         throw Object.assign(new Error('Please enter your full name (first and last name).'), {
@@ -49,12 +49,24 @@ export default function Login() {
           code: 'INVALID_EMAIL',
         });
       }
+      if (newPassword.length < 6) {
+        throw Object.assign(new Error('Password must be at least 6 characters.'), {
+          code: 'WEAK_PASSWORD',
+        });
+      }
+      if (newPassword !== confirmPassword) {
+        throw Object.assign(new Error('Passwords do not match.'), { code: 'PASSWORD_MISMATCH' });
+      }
 
-      const nextUser = await login(email, fullName.trim(), password);
-      navigate(nextUser.hasCompletedOnboarding ? '/dashboard' : '/onboarding');
+      const data = await api.resetPassword({
+        email,
+        name: fullName.trim(),
+        newPassword,
+      });
+      setSuccess(data.message || 'Password updated successfully. You can sign in now.');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       setError(err.message);
-      setErrorCode(err.code || '');
     } finally {
       setBusy(false);
     }
@@ -64,8 +76,8 @@ export default function Login() {
     <div className="auth-shell">
       <div className="auth-panel">
         <p className="brand">SignalDesk</p>
-        <h1>Welcome back</h1>
-        <p className="lede">Log in to your personalized crypto dashboard.</p>
+        <h1>Reset password</h1>
+        <p className="lede">Confirm your full name and email, then choose a new password.</p>
         <form onSubmit={onSubmit} className="stack-form" noValidate>
           <label>
             Full name
@@ -82,34 +94,41 @@ export default function Login() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
-            Password
+            New password
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={6}
             />
           </label>
-          <p className="auth-inline-link">
-            <Link to="/forgot-password">Forgot password?</Link>
-          </p>
+          <label>
+            Confirm new password
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </label>
           {error ? (
             <div className="form-alert" role="alert">
               <p className="error-text">{error}</p>
-              {errorCode === 'INVALID_CREDENTIALS' ? (
-                <p className="muted">
-                  New here? <Link to="/signup">Create an account</Link>
-                </p>
-              ) : null}
             </div>
           ) : null}
-          <button className="btn primary" type="submit" disabled={busy}>
-            {busy ? 'Signing in…' : 'Sign in'}
+          {success ? (
+            <div className="form-alert form-alert--success" role="status">
+              <p className="success-text">{success}</p>
+            </div>
+          ) : null}
+          <button className="btn primary" type="submit" disabled={busy || Boolean(success)}>
+            {busy ? 'Updating…' : 'Update password'}
           </button>
         </form>
         <p className="muted">
-          New here? <Link to="/signup">Create an account</Link>
+          Remembered it? <Link to="/login">Back to sign in</Link>
         </p>
       </div>
     </div>

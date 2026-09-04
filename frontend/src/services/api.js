@@ -35,6 +35,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
 export const api = {
   register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
+  resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: payload }),
   me: () => request('/auth/me'),
   getPreferences: () => request('/preferences'),
   savePreferences: (payload) => request('/preferences', { method: 'PUT', body: payload }),

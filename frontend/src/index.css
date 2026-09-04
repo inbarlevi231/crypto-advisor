@@ -535,12 +535,29 @@ input:focus {
   background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
+.form-alert--success {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 .form-alert .error-text {
   margin: 0;
 }
 
 .form-alert .muted {
   margin: 0.45rem 0 0;
+}
+
+.success-text {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.auth-inline-link {
+  margin: -0.35rem 0 0;
+  text-align: right;
+  font-size: 0.9rem;
 }
 
 .pad-x {
