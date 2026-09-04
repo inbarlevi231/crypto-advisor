@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Tooltip } from '../components/Tooltip';
 
 function isValidFullName(name) {
   const parts = String(name || '')
@@ -93,7 +94,10 @@ export default function Signup() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
-            Password
+            <span className="label-row">
+              Password
+              <Tooltip text="Password must be at least 6 characters." />
+            </span>
             <input
               type="password"
               value={password}

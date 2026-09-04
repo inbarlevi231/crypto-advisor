@@ -35,7 +35,9 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
         JSON.stringify([...(preferences.contentTypes || [])].sort());
       const sameInvestor = cachedPrefs.investorType === preferences.investorType;
 
-      if (sameAssets && sameContent && sameInvestor) {
+      const pricesWereFallback = cached.payload?.sections?.prices?.provider === 'fallback';
+      // Don't keep serving a failed CoinGecko day — retry live prices next load.
+      if (sameAssets && sameContent && sameInvestor && !pricesWereFallback) {
         return { ...cached.payload, cached: true };
       }
     }
@@ -136,11 +138,15 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
     cached: false,
   };
 
-  await DailyCache.findOneAndUpdate(
-    { userId, dateKey },
-    { userId, dateKey, payload },
-    { upsert: true, new: true }
-  );
+  const pricesAreFallback = sections.prices.provider === 'fallback';
+  // Avoid locking static fallback prices into the daily cache.
+  if (!pricesAreFallback) {
+    await DailyCache.findOneAndUpdate(
+      { userId, dateKey },
+      { userId, dateKey, payload },
+      { upsert: true, new: true }
+    );
+  }
 
   return payload;
 }

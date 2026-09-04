@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Tooltip } from '../components/Tooltip';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -94,7 +95,10 @@ export default function ForgotPassword() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </label>
           <label>
-            New password
+            <span className="label-row">
+              New password
+              <Tooltip text="Password must be at least 6 characters." />
+            </span>
             <input
               type="password"
               value={newPassword}
