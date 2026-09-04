@@ -255,47 +255,25 @@ input:focus {
 }
 
 .dash-grid {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   display: grid;
   gap: 0.9rem;
   grid-template-columns: 1fr;
-  align-items: stretch;
+  align-items: start;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 800px) {
   .dash-grid {
     grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "news prices"
-      "insight meme";
-  }
-
-  .dash-cell--news { grid-area: news; }
-  .dash-cell--prices { grid-area: prices; }
-  .dash-cell--insight { grid-area: insight; }
-  .dash-cell--meme { grid-area: meme; }
-}
-
-@media (min-width: 1100px) {
-  .dash-grid {
-    grid-template-columns: 1.15fr 1.15fr 0.9fr;
-    grid-template-rows: minmax(260px, 1fr) minmax(280px, 1fr);
-    grid-template-areas:
-      "news prices meme"
-      "insight insight meme";
-    min-height: calc(100vh - 140px);
   }
 }
 
-.dash-cell {
-  min-width: 0;
+.dash-col {
   display: flex;
-}
-
-.dash-cell > .section-card {
-  flex: 1;
-  width: 100%;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
 }
 
 .section-card {
@@ -307,20 +285,19 @@ input:focus {
   animation: rise 0.5s ease-out both;
   display: flex;
   flex-direction: column;
-  min-height: 240px;
+  height: auto;
 }
 
-.section-card:nth-child(2),
-.dash-cell:nth-child(2) .section-card {
-  animation-delay: 0.05s;
+.dash-col > .section-card:nth-child(2) {
+  animation-delay: 0.08s;
 }
-.section-card:nth-child(3),
-.dash-cell:nth-child(3) .section-card {
-  animation-delay: 0.1s;
+
+.dash-col:nth-child(2) > .section-card:nth-child(1) {
+  animation-delay: 0.04s;
 }
-.section-card:nth-child(4),
-.dash-cell:nth-child(4) .section-card {
-  animation-delay: 0.15s;
+
+.dash-col:nth-child(2) > .section-card:nth-child(2) {
+  animation-delay: 0.12s;
 }
 
 .section-card__header {
@@ -340,9 +317,7 @@ input:focus {
 }
 
 .section-card__body {
-  flex: 1;
   min-height: 0;
-  overflow: auto;
 }
 
 .pill {

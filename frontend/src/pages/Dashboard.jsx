@@ -141,106 +141,102 @@ export default function Dashboard() {
       {error ? <p className="error-text pad-x">{error}</p> : null}
 
       <main className="dash-grid">
-        <div className="dash-cell dash-cell--news">
-        <SectionCard
-          sectionKey="news"
-          title={sections.news.title}
-          provider={sections.news.provider}
-          itemId={sections.news.id}
-          snapshot={sections.news.items.map((i) => i.title).join(' | ')}
-          onVote={onVote}
-        >
-          <ul className="news-list">
-            {sections.news.items.map((item) => (
-              <li key={item.id}>
-                <a href={item.url} target="_blank" rel="noreferrer">
-                  {item.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        <div className="dash-col">
+          <SectionCard
+            sectionKey="news"
+            title={sections.news.title}
+            provider={sections.news.provider}
+            itemId={sections.news.id}
+            snapshot={sections.news.items.map((i) => i.title).join(' | ')}
+            onVote={onVote}
+          >
+            <ul className="news-list">
+              {sections.news.items.map((item) => (
+                <li key={item.id}>
+                  <a href={item.url} target="_blank" rel="noreferrer">
+                    {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+
+          <SectionCard
+            sectionKey="insight"
+            title={sections.insight.title}
+            provider={sections.insight.provider}
+            itemId={sections.insight.id}
+            snapshot={[sections.insight.text, sections.insight.social?.text].filter(Boolean).join(' | ')}
+            onVote={onVote}
+          >
+            <p className="insight-text">{sections.insight.text}</p>
+            {wantsSocial ? (
+              <div className="social-buzz">
+                <p className="social-buzz__label">Social buzz</p>
+                <p className="social-buzz__text">{sections.insight.social.text}</p>
+              </div>
+            ) : null}
+          </SectionCard>
         </div>
 
-        <div className="dash-cell dash-cell--prices">
-        <SectionCard
-          sectionKey="prices"
-          title={sections.prices.title}
-          provider={sections.prices.provider}
-          itemId={sections.prices.id}
-          snapshot={sections.prices.items.map((i) => `${i.symbol}:${i.priceUsd}`).join(',')}
-          onVote={onVote}
-        >
-          <div className="price-table">
-            {sections.prices.items.map((coin) => {
-              const chartData = wantsCharts
-                ? sections.charts.items.find((c) => c.id === coin.id)
-                : null;
-              return (
-                <div key={coin.id} className="price-row-group">
-                  <div className="price-row">
-                    <div>
-                      <strong>{coin.name}</strong>
-                      <span className="muted">{coin.symbol}</span>
+        <div className="dash-col">
+          <SectionCard
+            sectionKey="prices"
+            title={sections.prices.title}
+            provider={sections.prices.provider}
+            itemId={sections.prices.id}
+            snapshot={sections.prices.items.map((i) => `${i.symbol}:${i.priceUsd}`).join(',')}
+            onVote={onVote}
+          >
+            <div className="price-table">
+              {sections.prices.items.map((coin) => {
+                const chartData = wantsCharts
+                  ? sections.charts.items.find((c) => c.id === coin.id)
+                  : null;
+                return (
+                  <div key={coin.id} className="price-row-group">
+                    <div className="price-row">
+                      <div>
+                        <strong>{coin.name}</strong>
+                        <span className="muted">{coin.symbol}</span>
+                      </div>
+                      <div className="price-nums">
+                        <span>{formatPrice(coin.priceUsd)}</span>
+                        <span className={Number(coin.change24h) >= 0 ? 'up' : 'down'}>
+                          {formatChange(coin.change24h)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="price-nums">
-                      <span>{formatPrice(coin.priceUsd)}</span>
-                      <span className={Number(coin.change24h) >= 0 ? 'up' : 'down'}>
-                        {formatChange(coin.change24h)}
-                      </span>
-                    </div>
+                    {chartData?.dataPoints?.length > 1 ? (
+                      <div className="price-sparkline">
+                        <Sparkline dataPoints={chartData.dataPoints} />
+                      </div>
+                    ) : null}
                   </div>
-                  {chartData?.dataPoints?.length > 1 ? (
-                    <div className="price-sparkline">
-                      <Sparkline dataPoints={chartData.dataPoints} />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </SectionCard>
-        </div>
-
-        <div className="dash-cell dash-cell--insight">
-        <SectionCard
-          sectionKey="insight"
-          title={sections.insight.title}
-          provider={sections.insight.provider}
-          itemId={sections.insight.id}
-          snapshot={[sections.insight.text, sections.insight.social?.text].filter(Boolean).join(' | ')}
-          onVote={onVote}
-        >
-          <p className="insight-text">{sections.insight.text}</p>
-          {wantsSocial ? (
-            <div className="social-buzz">
-              <p className="social-buzz__label">Social buzz</p>
-              <p className="social-buzz__text">{sections.insight.social.text}</p>
+                );
+              })}
             </div>
-          ) : null}
-        </SectionCard>
-        </div>
+          </SectionCard>
 
-        <div className="dash-cell dash-cell--meme">
-        <SectionCard
-          sectionKey="meme"
-          title={sections.meme.title}
-          provider={sections.meme.provider}
-          itemId={sections.meme.id}
-          snapshot={[sections.meme.memeTitle, sections.meme.funFact?.text].filter(Boolean).join(' | ')}
-          onVote={onVote}
-        >
-          <figure className="meme-figure">
-            <img src={sections.meme.imageUrl} alt={sections.meme.alt || sections.meme.memeTitle} />
-            <figcaption>{sections.meme.memeTitle}</figcaption>
-          </figure>
-          {wantsFunFact ? (
-            <div className="fun-fact">
-              <p className="fun-fact__label">Fun fact</p>
-              <p className="fun-fact__text">{sections.meme.funFact.text}</p>
-            </div>
-          ) : null}
-        </SectionCard>
+          <SectionCard
+            sectionKey="meme"
+            title={sections.meme.title}
+            provider={sections.meme.provider}
+            itemId={sections.meme.id}
+            snapshot={[sections.meme.memeTitle, sections.meme.funFact?.text].filter(Boolean).join(' | ')}
+            onVote={onVote}
+          >
+            <figure className="meme-figure">
+              <img src={sections.meme.imageUrl} alt={sections.meme.alt || sections.meme.memeTitle} />
+              <figcaption>{sections.meme.memeTitle}</figcaption>
+            </figure>
+            {wantsFunFact ? (
+              <div className="fun-fact">
+                <p className="fun-fact__label">Fun fact</p>
+                <p className="fun-fact__text">{sections.meme.funFact.text}</p>
+              </div>
+            ) : null}
+          </SectionCard>
         </div>
       </main>
     </div>
