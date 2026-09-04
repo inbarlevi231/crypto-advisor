@@ -141,6 +141,7 @@ export default function Dashboard() {
       {error ? <p className="error-text pad-x">{error}</p> : null}
 
       <main className="dash-grid">
+        <div className="dash-cell dash-cell--news">
         <SectionCard
           sectionKey="news"
           title={sections.news.title}
@@ -159,7 +160,9 @@ export default function Dashboard() {
             ))}
           </ul>
         </SectionCard>
+        </div>
 
+        <div className="dash-cell dash-cell--prices">
         <SectionCard
           sectionKey="prices"
           title={sections.prices.title}
@@ -197,7 +200,9 @@ export default function Dashboard() {
             })}
           </div>
         </SectionCard>
+        </div>
 
+        <div className="dash-cell dash-cell--insight">
         <SectionCard
           sectionKey="insight"
           title={sections.insight.title}
@@ -214,7 +219,9 @@ export default function Dashboard() {
             </div>
           ) : null}
         </SectionCard>
+        </div>
 
+        <div className="dash-cell dash-cell--meme">
         <SectionCard
           sectionKey="meme"
           title={sections.meme.title}
@@ -234,6 +241,7 @@ export default function Dashboard() {
             </div>
           ) : null}
         </SectionCard>
+        </div>
       </main>
     </div>
   );
