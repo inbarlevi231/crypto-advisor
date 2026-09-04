@@ -1,20 +1,51 @@
 # SignalDesk — AI Crypto Advisor
 
-Personalized crypto investor dashboard: short onboarding quiz, daily curated sections (news, prices, AI insight, meme), and thumbs up/down feedback for future model improvement.
+Personalized crypto investor dashboard: short onboarding quiz, daily curated sections (news, prices, AI insight, meme), optional Social / Fun / Charts extras, and thumbs up/down feedback for future model improvement.
+
+## Live demo
+
+| Layer | URL |
+|-------|-----|
+| Frontend | https://crypto-advisor-nine.vercel.app |
+| Backend API | https://crypto-advisor-api-om7f.onrender.com |
+| Repo | https://github.com/inbarlevi231/crypto-advisor |
 
 ## Stack
 
-- Frontend: React (Vite) + React Router
-- Backend: Node.js + Express
-- Database: MongoDB
+- **Frontend:** React (Vite) + React Router
+- **Backend:** Node.js + Express
+- **Database:** MongoDB Atlas
+- **Deploy:** Vercel (frontend) + Render (backend)
+
+## Features
+
+1. **Auth** — register / login with full name (first + last), email, password; JWT sessions
+2. **Signup UX** — confirm password; password tooltip (min 6 characters); clear structured error codes
+3. **Forgot password** — reset with email + full name + new password (no email sending); new-password tooltip
+4. **Onboarding** — assets, investor type, content types → saved as preferences; editable later from the dashboard
+5. **Daily dashboard** (two stacked columns: News → Insight | Prices → Meme):
+   - **Market News** — MarketAux (static JSON fallback)
+   - **Coin Prices** — CoinGecko (static fallback on failure)
+   - **AI Insight** — OpenRouter (rule-based fallback)
+   - **Fun Crypto Meme** — static local images
+6. **Preference extras** (only when selected):
+   - **Charts** — CoinGecko 7-day sparklines under each price
+   - **Social** — static social-buzz blurb under the insight
+   - **Fun** — static fun fact under the meme
+7. **Refresh** — force rebuild of today’s desk (`?refresh=1`)
+8. **Feedback** — thumbs up/down per section, stored for future ranking / training
 
 ## Local setup
 
 ### Prerequisites
 
 - Node.js 18+
-- MongoDB via Docker (`docker run -d --name crypto-advisor-mongo -p 27017:27017 mongo:7`), Atlas URI, or local MongoDB
-- `MONGODB_URI=memory` is documented but may fail on Windows without VC++ redistributable — prefer Docker/Atlas
+- MongoDB (Docker, local, or Atlas URI)
+
+```bash
+# Optional local MongoDB via Docker
+docker run -d --name crypto-advisor-mongo -p 27017:27017 mongo:7
+```
 
 ### 1. Backend
 
@@ -44,41 +75,53 @@ App defaults to `http://localhost:5173`.
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `MONGODB_URI` | Yes | e.g. `mongodb://127.0.0.1:27017/crypto-advisor` |
+| `MONGODB_URI` | Yes | Atlas or local Mongo URI |
 | `JWT_SECRET` | Yes | Long random string |
-| `CLIENT_URL` | Yes | Frontend origin for CORS |
-| `OPENROUTER_API_KEY` | No | Falls back to rule-based insight |
-| `MARKETAUX_API_KEY` | No | Falls back to static news JSON |
+| `CLIENT_URL` | Yes | Frontend origin for CORS (local `http://localhost:5173` or Vercel URL) |
+| `OPENROUTER_API_KEY` | Recommended | Without it, AI insight uses rule-based fallback |
+| `OPENROUTER_MODEL` | No | Default `openai/gpt-4o-mini` |
+| `MARKETAUX_API_KEY` | Recommended | Without it, news uses static JSON |
+| `COINGECKO_API_KEY` | Recommended | Free Demo key; reduces rate-limit fallbacks on cloud hosts |
+| `COINGECKO_PRO` | No | `true` only for paid CoinGecko Pro (`pro-api.coingecko.com`) |
+| `PORT` | No | Default `4000` |
 
 **Frontend (`frontend/.env`)**
 
 | Variable | Notes |
 |----------|-------|
-| `VITE_API_URL` | e.g. `http://localhost:4000/api` |
-
-## Features
-
-1. Register / login (JWT)
-2. Onboarding quiz → preferences in MongoDB
-3. Daily dashboard: Market News, Coin Prices (CoinGecko), AI Insight (OpenRouter or fallback), Fun Meme
-4. Thumbs up/down per section stored as feedback
+| `VITE_API_URL` | Local: `http://localhost:4000/api` · Prod: `https://crypto-advisor-api-om7f.onrender.com/api` |
 
 ## API overview
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET|PUT /api/preferences`
-- `GET /api/dashboard?refresh=1`
-- `POST /api/feedback`
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/api/auth/register` | Full name, email, password |
+| `POST` | `/api/auth/login` | Email + password (name checked when provided) |
+| `POST` | `/api/auth/reset-password` | Email + full name + new password |
+| `GET` | `/api/auth/me` | Current user (JWT) |
+| `GET` / `PUT` | `/api/preferences` | Onboarding answers |
+| `GET` | `/api/dashboard?refresh=1` | Daily desk; `refresh=1` bypasses cache |
+| `POST` / `GET` | `/api/feedback` | Section votes |
 
-## Deploy notes (later)
+Auth errors return `{ message, code }` (e.g. `EMAIL_EXISTS`, `WEAK_PASSWORD`, `PASSWORD_MISMATCH`).
 
-- Frontend: Vercel / Netlify
-- Backend: Render / Railway
-- DB: MongoDB Atlas
+## Data providers & fallbacks
 
-GitHub push and public deploy are intentionally deferred until you ask.
+| Section | Live source | Fallback |
+|---------|-------------|----------|
+| News | MarketAux | `backend/data/news-fallback.json` |
+| Prices / charts | CoinGecko | Static prices + synthetic sparklines |
+| Insight | OpenRouter | Deterministic text from preferences + prices |
+| Social buzz | — | `backend/data/social-buzz.json` (by design) |
+| Fun fact / meme | — | `fun-facts.json` / `memes.json` (by design) |
+
+Live providers use short in-memory caching and retries. Dashboard daily cache is **not** locked when prices/news/insight fell back, so the next load can retry the APIs.
+
+## Deploy
+
+- **Frontend (Vercel):** set `VITE_API_URL` to the Render API `/api` URL
+- **Backend (Render):** set all backend env vars; `CLIENT_URL` must be the Vercel origin
+- **MongoDB Atlas:** allow network access from Render (e.g. `0.0.0.0/0` for simple demos)
 
 ## Bonus — feedback for future model training
 
@@ -86,13 +129,11 @@ Votes are stored as labeled examples: `{ userId, preferences context, section, i
 
 A practical improvement loop (not implemented here):
 
-1. **Aggregate preferences + votes** into training rows (positive/negative labels per content item and section).
-2. **Train a lightweight ranker** (logistic regression / gradient boosting / small neural ranker) that scores candidate news, insights, and memes given user features (assets, investor type, contentTypes).
-3. **Online use:** generate candidate content as today, re-rank with the model, serve top-N; keep collecting votes.
-4. **Optional LLM path:** use high-confidence preferred examples as few-shot or preference-tuning data for the daily insight prompt.
-
-This keeps the product shippable on free APIs while building a dataset for personalization.
+1. Aggregate preferences + votes into training rows.
+2. Train a lightweight ranker on user features (assets, investor type, contentTypes).
+3. Re-rank candidate content online; keep collecting votes.
+4. Optionally feed high-confidence examples into the insight prompt.
 
 ## AI tools usage summary
 
-This project was implemented with Cursor (Composer agent): requirements from the Moveo PDF, plan for React + Express + MongoDB, scaffolded monorepo, auth/onboarding/dashboard/feedback, static API fallbacks, and this README. No GitHub publish in the initial build session.
+Built with Cursor (Composer): Moveo coding task requirements, React + Express + MongoDB monorepo, auth/onboarding/dashboard/feedback, live API integrations with graceful fallbacks, Vercel + Render deploy, and this README.
