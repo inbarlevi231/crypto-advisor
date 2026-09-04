@@ -18,35 +18,49 @@ function normalizeFullName(name) {
 function isValidFullName(name) {
   const normalized = normalizeFullName(name);
   const parts = normalized.split(' ').filter(Boolean);
-  // Require at least first + last name, letters (including unicode) allowed
   if (parts.length < 2) return false;
   return parts.every((part) => /^[\p{L}'-]+$/u.test(part));
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function sendError(res, status, code, message) {
+  return res.status(status).json({ message, code });
 }
 
 router.post('/register', async (req, res) => {
   try {
     const { email, name, password } = req.body;
     if (!email || !name || !password) {
-      return res.status(400).json({ message: 'Email, full name, and password are required' });
+      return sendError(res, 400, 'MISSING_FIELDS', 'Please fill in full name, email, and password.');
     }
     if (!isValidFullName(name)) {
-      return res.status(400).json({
-        message: 'Please enter your full name (first and last name)',
-      });
+      return sendError(
+        res,
+        400,
+        'INVALID_FULL_NAME',
+        'Please enter your full name (first and last name).'
+      );
+    }
+    if (!isValidEmail(email)) {
+      return sendError(res, 400, 'INVALID_EMAIL', 'Please enter a valid email address.');
     }
     if (String(password).length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      return sendError(res, 400, 'WEAK_PASSWORD', 'Password must be at least 6 characters.');
     }
 
-    const existing = await User.findOne({ email: String(email).toLowerCase().trim() });
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
-      return res.status(409).json({ message: 'Email already registered' });
+      return sendError(res, 409, 'EMAIL_EXISTS', 'An account with this email already exists.');
     }
 
     const fullName = normalizeFullName(name);
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
-      email: String(email).toLowerCase().trim(),
+      email: normalizedEmail,
       name: fullName,
       passwordHash,
     });
@@ -63,7 +77,7 @@ router.post('/register', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Registration failed' });
+    return sendError(res, 500, 'SERVER_ERROR', 'Registration failed. Please try again.');
   }
 });
 
@@ -71,28 +85,34 @@ router.post('/login', async (req, res) => {
   try {
     const { email, name, password } = req.body;
     if (!email || !name || !password) {
-      return res.status(400).json({ message: 'Email, full name, and password are required' });
+      return sendError(res, 400, 'MISSING_FIELDS', 'Please fill in full name, email, and password.');
     }
     if (!isValidFullName(name)) {
-      return res.status(400).json({
-        message: 'Please enter your full name (first and last name)',
-      });
+      return sendError(
+        res,
+        400,
+        'INVALID_FULL_NAME',
+        'Please enter your full name (first and last name).'
+      );
+    }
+    if (!isValidEmail(email)) {
+      return sendError(res, 400, 'INVALID_EMAIL', 'Please enter a valid email address.');
     }
 
     const user = await User.findOne({ email: String(email).toLowerCase().trim() });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return sendError(res, 401, 'INVALID_CREDENTIALS', 'Incorrect email or password.');
     }
 
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return sendError(res, 401, 'INVALID_CREDENTIALS', 'Incorrect email or password.');
     }
 
     const enteredName = normalizeFullName(name).toLowerCase();
     const storedName = normalizeFullName(user.name).toLowerCase();
     if (enteredName !== storedName) {
-      return res.status(401).json({ message: 'Full name does not match this account' });
+      return sendError(res, 401, 'NAME_MISMATCH', 'Full name does not match this account.');
     }
 
     const token = signToken(user._id);
@@ -107,7 +127,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Login failed' });
+    return sendError(res, 500, 'SERVER_ERROR', 'Login failed. Please try again.');
   }
 });
 
@@ -116,12 +136,12 @@ router.get('/me', async (req, res) => {
     const header = req.headers.authorization || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return sendError(res, 401, 'AUTH_REQUIRED', 'Authentication required');
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.userId).select('-passwordHash');
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      return sendError(res, 401, 'USER_NOT_FOUND', 'User not found');
     }
     res.json({
       user: {
@@ -132,7 +152,7 @@ router.get('/me', async (req, res) => {
       },
     });
   } catch {
-    res.status(401).json({ message: 'Invalid or expired token' });
+    return sendError(res, 401, 'INVALID_TOKEN', 'Invalid or expired token');
   }
 });
 

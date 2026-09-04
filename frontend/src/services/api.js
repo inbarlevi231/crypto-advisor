@@ -9,15 +9,25 @@ async function request(path, { method = 'GET', body, token } = {}) {
   const auth = token ?? getToken();
   if (auth) headers.Authorization = `Bearer ${auth}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    const err = new Error('Unable to reach the server. Please try again.');
+    err.code = 'NETWORK_ERROR';
+    throw err;
+  }
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.message || `Request failed (${res.status})`);
+    const err = new Error(data.message || `Request failed (${res.status})`);
+    err.code = data.code || 'REQUEST_FAILED';
+    err.status = res.status;
+    throw err;
   }
   return data;
 }
