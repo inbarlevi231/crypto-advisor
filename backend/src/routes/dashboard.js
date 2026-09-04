@@ -36,8 +36,19 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
       const sameInvestor = cachedPrefs.investorType === preferences.investorType;
 
       const pricesWereFallback = cached.payload?.sections?.prices?.provider === 'fallback';
-      // Don't keep serving a failed CoinGecko day — retry live prices next load.
-      if (sameAssets && sameContent && sameInvestor && !pricesWereFallback) {
+      const newsWereStatic =
+        cached.payload?.sections?.news?.provider === 'static' ||
+        cached.payload?.sections?.news?.provider === 'fallback';
+      const insightWereFallback = cached.payload?.sections?.insight?.provider === 'fallback';
+      // Don't keep serving a failed API day — retry live providers on next load.
+      if (
+        sameAssets &&
+        sameContent &&
+        sameInvestor &&
+        !pricesWereFallback &&
+        !newsWereStatic &&
+        !insightWereFallback
+      ) {
         return { ...cached.payload, cached: true };
       }
     }
@@ -139,8 +150,10 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
   };
 
   const pricesAreFallback = sections.prices.provider === 'fallback';
-  // Avoid locking static fallback prices into the daily cache.
-  if (!pricesAreFallback) {
+  const newsAreStatic = sections.news.provider === 'static' || sections.news.provider === 'fallback';
+  const insightIsFallback = sections.insight.provider === 'fallback';
+  // Avoid locking static/fallback API results into the daily cache.
+  if (!pricesAreFallback && !newsAreStatic && !insightIsFallback) {
     await DailyCache.findOneAndUpdate(
       { userId, dateKey },
       { userId, dateKey, payload },

@@ -82,9 +82,65 @@ function buildPromptExtras(contentTypes = []) {
   return extras.length ? `\nExtra guidance:\n- ${extras.join('\n- ')}` : '';
 }
 
+function looksIncomplete(text, finishReason) {
+  if (!text || text.length < 40) return true;
+  if (finishReason === 'length') return true;
+  // Accept soft endings; only reject obvious mid-thought cuts.
+  if (/[,:;]\s*$/.test(text)) return true;
+  if (/\b(and|or|with|for|to|the|a|an)\s*$/i.test(text)) return true;
+  if (!/[.!?]"?$/.test(text)) return true;
+  // Ends with a tiny fragment after a space (e.g. "and h")
+  if (/\s[A-Za-z]{1,3}$/.test(text)) return true;
+  return false;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callOpenRouter({ apiKey, prompt, maxTokens }) {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
+      'X-Title': 'AI Crypto Advisor',
+    },
+    body: JSON.stringify({
+      // Stable small model; avoid auto routing that sometimes truncates.
+      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You write brief, complete crypto market insights. Always finish your sentences. Always include each asset 24h move when prices are provided. End with a period.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.4,
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    const err = new Error(`OpenRouter ${res.status}${errBody ? `: ${errBody.slice(0, 180)}` : ''}`);
+    err.status = res.status;
+    throw err;
+  }
+
+  const data = await res.json();
+  return {
+    text: extractInsightText(data.choices?.[0]?.message?.content),
+    finishReason: data.choices?.[0]?.finish_reason,
+  };
+}
+
 async function generateInsight({ preferences, prices, newsTitles }) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
+    console.warn('OPENROUTER_API_KEY missing; using fallback insight');
     return buildFallbackInsight({ preferences, prices });
   }
 
@@ -102,54 +158,41 @@ Content interests: ${contentTypes.join(', ') || 'none specified'}
 Prices: ${JSON.stringify(priceSummary)}
 Headlines: ${(newsTitles || []).join(' | ') || 'n/a'}${buildPromptExtras(contentTypes)}`;
 
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.CLIENT_URL || 'http://localhost:5173',
-        'X-Title': 'AI Crypto Advisor',
-      },
-      body: JSON.stringify({
-        model: 'openrouter/auto',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You write brief, complete crypto market insights. Always finish your sentences. Always include each asset 24h move when prices are provided.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 320,
-      }),
-    });
+  let lastError;
+  const tokenBudgets = [420, 640, 800];
 
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '');
-      throw new Error(`OpenRouter ${res.status}${errBody ? `: ${errBody.slice(0, 180)}` : ''}`);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const maxTokens = tokenBudgets[attempt];
+      const { text, finishReason } = await callOpenRouter({ apiKey, prompt, maxTokens });
+      if (!text) {
+        throw new Error('Empty insight');
+      }
+      if (looksIncomplete(text, finishReason)) {
+        lastError = new Error(`Incomplete insight (finish_reason=${finishReason || 'n/a'})`);
+        if (attempt < 2) {
+          await sleep(400 * 2 ** attempt);
+          continue;
+        }
+        throw lastError;
+      }
+      return {
+        id: `insight-${new Date().toISOString().slice(0, 10)}`,
+        text,
+        provider: 'openrouter',
+      };
+    } catch (err) {
+      lastError = err;
+      const status = err.status;
+      const retryable =
+        !status || status === 429 || status >= 500 || /Empty insight|Incomplete insight/.test(err.message);
+      if (!retryable || attempt === 2) break;
+      await sleep(700 * 2 ** attempt);
     }
-    const data = await res.json();
-    const text = extractInsightText(data.choices?.[0]?.message?.content);
-    const finishReason = data.choices?.[0]?.finish_reason;
-    if (!text) {
-      throw new Error('Empty insight');
-    }
-    // If the model truncates mid-thought, prefer a complete deterministic insight.
-    const looksIncomplete = finishReason === 'length' || !/[.!?]"?$/.test(text);
-    if (looksIncomplete) {
-      console.warn('OpenRouter insight looked truncated; using complete fallback text');
-      return buildFallbackInsight({ preferences, prices });
-    }
-    return {
-      id: `insight-${new Date().toISOString().slice(0, 10)}`,
-      text,
-      provider: 'openrouter',
-    };
-  } catch (err) {
-    console.warn('OpenRouter failed, using fallback insight:', err.message);
-    return buildFallbackInsight({ preferences, prices });
   }
+
+  console.warn('OpenRouter failed, using fallback insight:', lastError?.message || 'unknown');
+  return buildFallbackInsight({ preferences, prices });
 }
 
 module.exports = { generateInsight };
