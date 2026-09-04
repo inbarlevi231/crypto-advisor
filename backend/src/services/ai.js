@@ -8,7 +8,7 @@ function buildFallbackExtras(preferences) {
   const extras = { social: null, funFact: null };
 
   if (contentTypes.includes('Social')) {
-    const social = pickSocialBuzz(assets);
+    const social = pickSocialBuzz(assets, preferences.investorType);
     extras.social = {
       id: social.id || `social-${dateKey}`,
       text: social.text,
@@ -230,7 +230,7 @@ async function generateInsight({ preferences, prices, newsTitles }) {
   const extrasInstructions = [];
   if (wantsSocial) {
     extrasInstructions.push(
-      'Include "social": one complete sentence on community/social sentiment for their assets.'
+      'Include "social": one complete sentence on community/social sentiment that fits BOTH their selected assets AND their investor type (e.g. HODLer vs DayTrader vs NFTCollector).'
     );
   }
   if (wantsFun) {

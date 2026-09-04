@@ -2,26 +2,61 @@
   {
     "id": "social-1",
     "assets": ["bitcoin", "ethereum"],
+    "investorTypes": ["HODLer", "DayTrader"],
     "text": "Community buzz: traders are debating whether ETF inflows can keep supporting BTC while ETH chatter focuses on L2 fees and staking yields."
   },
   {
     "id": "social-2",
     "assets": ["solana"],
+    "investorTypes": ["DayTrader", "HODLer"],
     "text": "On X and Reddit, Solana threads are loud about throughput and meme-coin rotations — sentiment flips fast."
   },
   {
     "id": "social-3",
     "assets": ["dogecoin"],
+    "investorTypes": ["DayTrader"],
     "text": "Social chatter around DOGE spikes whenever meme season returns — treat hype as noise unless volume confirms."
   },
   {
     "id": "social-4",
     "assets": ["cardano", "ripple", "chainlink", "avalanche-2"],
+    "investorTypes": ["HODLer", "DayTrader"],
     "text": "Alt communities are active with upgrade rumors and partnership posts — verify claims before reacting."
   },
   {
     "id": "social-5",
     "assets": [],
-    "text": "Across crypto Twitter/Reddit, risk appetite looks mixed: some posts call for higher highs, others warn of crowded leverage."
+    "investorTypes": ["HODLer"],
+    "text": "Across crypto Twitter/Reddit, long-term holders are posting about accumulation and ignoring short-term noise."
+  },
+  {
+    "id": "social-6",
+    "assets": ["bitcoin", "ethereum", "solana"],
+    "investorTypes": ["DayTrader"],
+    "text": "Day-trading chats are focused on intraday levels, funding rates, and whether momentum will hold into the next session."
+  },
+  {
+    "id": "social-7",
+    "assets": ["ethereum", "solana"],
+    "investorTypes": ["NFTCollector"],
+    "text": "NFT circles on X are watching ETH/SOL gas and floor chatter — collectors care as much about fees as about drops."
+  },
+  {
+    "id": "social-8",
+    "assets": ["bitcoin"],
+    "investorTypes": ["NFTCollector", "HODLer"],
+    "text": "Some NFT and BTC communities overlap on “digital scarcity” talk — sentiment is calmer than pure meme-coin threads."
+  },
+  {
+    "id": "social-9",
+    "assets": [],
+    "investorTypes": ["NFTCollector"],
+    "text": "NFT Twitter is mixing blue-chip floor updates with mint FOMO — collectors are sorting signal from hype carefully."
+  },
+  {
+    "id": "social-10",
+    "assets": [],
+    "investorTypes": ["DayTrader"],
+    "text": "Trading Discords are noisy with scalp setups and liquidation watchlists — risk posts warn about crowded leverage."
   }
 ]
