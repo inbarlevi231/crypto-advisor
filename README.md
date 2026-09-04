@@ -133,7 +133,3 @@ A practical improvement loop (not implemented here):
 2. Train a lightweight ranker on user features (assets, investor type, contentTypes).
 3. Re-rank candidate content online; keep collecting votes.
 4. Optionally feed high-confidence examples into the insight prompt.
-
-## AI tools usage summary
-
-Built with Cursor (Composer): Moveo coding task requirements, React + Express + MongoDB monorepo, auth/onboarding/dashboard/feedback, live API integrations with graceful fallbacks, Vercel + Render deploy, and this README.
