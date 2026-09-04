@@ -1,6 +1,33 @@
+const { pickSocialBuzz } = require('./social');
+const { pickFunFact } = require('./memes');
+
+function buildFallbackExtras(preferences) {
+  const contentTypes = preferences.contentTypes || [];
+  const assets = preferences.assets || [];
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const extras = { social: null, funFact: null };
+
+  if (contentTypes.includes('Social')) {
+    const social = pickSocialBuzz(assets);
+    extras.social = {
+      id: social.id || `social-${dateKey}`,
+      text: social.text,
+      provider: 'fallback',
+    };
+  }
+  if (contentTypes.includes('Fun')) {
+    const funFact = pickFunFact(Date.now());
+    extras.funFact = {
+      id: funFact.id || `fun-${dateKey}`,
+      text: funFact.text,
+      provider: 'fallback',
+    };
+  }
+  return extras;
+}
+
 function buildFallbackInsight({ preferences, prices }) {
   const contentTypes = preferences.contentTypes || [];
-  const wantsSocial = contentTypes.includes('Social');
   const assets = preferences.assets?.join(', ') || 'crypto';
 
   const moves = (prices || [])
@@ -22,14 +49,14 @@ function buildFallbackInsight({ preferences, prices }) {
         ? 'Keep an eye on blue-chip floor prices and gas conditions.'
         : 'Stay focused on long-term thesis and avoid noise.';
 
-  const socialBit = wantsSocial
-    ? ' Community chatter is loud around your picks — weigh sentiment against on-chain reality.'
-    : '';
+  const extras = buildFallbackExtras(preferences);
 
   return {
     id: `fallback-insight-${new Date().toISOString().slice(0, 10)}`,
-    text: `As a ${preferences.investorType} interested in ${assets}: ${priceBit} ${style}${socialBit}`,
+    text: `As a ${preferences.investorType} interested in ${assets}: ${priceBit} ${style}`,
     provider: 'fallback',
+    social: extras.social,
+    funFact: extras.funFact,
   };
 }
 
@@ -69,27 +96,12 @@ function summarizePrices(prices = []) {
   }));
 }
 
-function buildPromptExtras(contentTypes = []) {
-  const extras = [];
-  if (contentTypes.includes('Social')) {
-    extras.push(
-      'The user cares about Social content: include a short take on community/social sentiment (Twitter/X, Reddit-style buzz) for their assets.'
-    );
-  }
-  if (contentTypes.includes('Fun')) {
-    extras.push('Keep the tone light and engaging where it still adds value.');
-  }
-  return extras.length ? `\nExtra guidance:\n- ${extras.join('\n- ')}` : '';
-}
-
 function looksIncomplete(text, finishReason) {
   if (!text || text.length < 40) return true;
   if (finishReason === 'length') return true;
-  // Accept soft endings; only reject obvious mid-thought cuts.
   if (/[,:;]\s*$/.test(text)) return true;
   if (/\b(and|or|with|for|to|the|a|an)\s*$/i.test(text)) return true;
   if (!/[.!?]"?$/.test(text)) return true;
-  // Ends with a tiny fragment after a space (e.g. "and h")
   if (/\s[A-Za-z]{1,3}$/.test(text)) return true;
   return false;
 }
@@ -98,7 +110,47 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function callOpenRouter({ apiKey, prompt, maxTokens }) {
+function parseInsightPayload(rawText, { wantsSocial, wantsFun }) {
+  const cleaned = String(rawText || '')
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try {
+        parsed = JSON.parse(cleaned.slice(start, end + 1));
+      } catch {
+        parsed = null;
+      }
+    }
+  }
+
+  if (parsed && typeof parsed === 'object') {
+    const insight = String(parsed.insight || parsed.text || '').trim();
+    const socialText = String(parsed.social || '').trim();
+    const funText = String(parsed.funFact || parsed.fun_fact || '').trim();
+    return {
+      insight,
+      social: wantsSocial && socialText ? socialText : null,
+      funFact: wantsFun && funText ? funText : null,
+    };
+  }
+
+  // Plain-text response: treat whole body as insight only.
+  return {
+    insight: cleaned,
+    social: null,
+    funFact: null,
+  };
+}
+
+async function callOpenRouter({ apiKey, prompt, maxTokens, system }) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -108,14 +160,9 @@ async function callOpenRouter({ apiKey, prompt, maxTokens }) {
       'X-Title': 'AI Crypto Advisor',
     },
     body: JSON.stringify({
-      // Stable small model; avoid auto routing that sometimes truncates.
       model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini',
       messages: [
-        {
-          role: 'system',
-          content:
-            'You write brief, complete crypto market insights. Always finish your sentences. Always include each asset 24h move when prices are provided. End with a period.',
-        },
+        { role: 'system', content: system },
         { role: 'user', content: prompt },
       ],
       max_tokens: maxTokens,
@@ -137,6 +184,25 @@ async function callOpenRouter({ apiKey, prompt, maxTokens }) {
   };
 }
 
+function attachExtras(base, preferences, { socialText, funFactText, provider }) {
+  const contentTypes = preferences.contentTypes || [];
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const fallbackExtras = buildFallbackExtras(preferences);
+  const result = { ...base, social: null, funFact: null };
+
+  if (contentTypes.includes('Social')) {
+    result.social = socialText
+      ? { id: `social-${dateKey}`, text: socialText, provider }
+      : fallbackExtras.social;
+  }
+  if (contentTypes.includes('Fun')) {
+    result.funFact = funFactText
+      ? { id: `fun-${dateKey}`, text: funFactText, provider }
+      : fallbackExtras.funFact;
+  }
+  return result;
+}
+
 async function generateInsight({ preferences, prices, newsTitles }) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -145,30 +211,65 @@ async function generateInsight({ preferences, prices, newsTitles }) {
   }
 
   const contentTypes = preferences.contentTypes || [];
+  const wantsSocial = contentTypes.includes('Social');
+  const wantsFun = contentTypes.includes('Fun');
   const priceSummary = summarizePrices(prices);
-  const prompt = `You are a concise crypto advisor. Write exactly 2 complete sentences of insight for today.
-Rules:
+
+  const extraFields = [];
+  if (wantsSocial) {
+    extraFields.push('"social": "..."');
+  }
+  if (wantsFun) {
+    extraFields.push('"funFact": "..."');
+  }
+
+  const jsonShape = wantsSocial || wantsFun
+    ? `{ "insight": "two complete sentences...", ${extraFields.join(', ')} }`
+    : `{ "insight": "two complete sentences..." }`;
+
+  const extrasInstructions = [];
+  if (wantsSocial) {
+    extrasInstructions.push(
+      'Include "social": one complete sentence on community/social sentiment for their assets.'
+    );
+  }
+  if (wantsFun) {
+    extrasInstructions.push(
+      'Include "funFact": one short entertaining crypto fun fact related to their assets or investor type when possible.'
+    );
+  }
+
+  const prompt = `Return ONLY valid JSON (no markdown) in this shape:
+${jsonShape}
+
+Rules for insight:
+- Exactly 2 complete sentences.
 - Mention EVERY listed asset by symbol and its 24h % change.
-- Finish every sentence fully. Do not stop mid-sentence.
-- Be practical and specific. No disclaimer.
+- Finish every sentence fully. Be practical and specific. No disclaimer.
+${extrasInstructions.length ? `\nExtra fields:\n- ${extrasInstructions.join('\n- ')}` : ''}
 
 Investor type: ${preferences.investorType}
 Assets: ${preferences.assets?.join(', ')}
 Content interests: ${contentTypes.join(', ') || 'none specified'}
 Prices: ${JSON.stringify(priceSummary)}
-Headlines: ${(newsTitles || []).join(' | ') || 'n/a'}${buildPromptExtras(contentTypes)}`;
+Headlines: ${(newsTitles || []).join(' | ') || 'n/a'}`;
+
+  const system =
+    'You are a crypto advisor API. Reply with JSON only. Always finish sentences. Always include each asset 24h move in insight when prices are provided.';
 
   let lastError;
-  const tokenBudgets = [420, 640, 800];
+  const tokenBudgets = [500, 720, 900];
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const maxTokens = tokenBudgets[attempt];
-      const { text, finishReason } = await callOpenRouter({ apiKey, prompt, maxTokens });
+      const { text, finishReason } = await callOpenRouter({ apiKey, prompt, maxTokens, system });
       if (!text) {
         throw new Error('Empty insight');
       }
-      if (looksIncomplete(text, finishReason)) {
+
+      const parsed = parseInsightPayload(text, { wantsSocial, wantsFun });
+      if (!parsed.insight || looksIncomplete(parsed.insight, finishReason === 'length' ? 'length' : 'stop')) {
         lastError = new Error(`Incomplete insight (finish_reason=${finishReason || 'n/a'})`);
         if (attempt < 2) {
           await sleep(400 * 2 ** attempt);
@@ -176,16 +277,43 @@ Headlines: ${(newsTitles || []).join(' | ') || 'n/a'}${buildPromptExtras(content
         }
         throw lastError;
       }
-      return {
-        id: `insight-${new Date().toISOString().slice(0, 10)}`,
-        text,
-        provider: 'openrouter',
-      };
+
+      if (wantsSocial && !parsed.social) {
+        lastError = new Error('Missing social field');
+        if (attempt < 2) {
+          await sleep(400 * 2 ** attempt);
+          continue;
+        }
+      }
+      if (wantsFun && !parsed.funFact) {
+        lastError = new Error('Missing funFact field');
+        if (attempt < 2) {
+          await sleep(400 * 2 ** attempt);
+          continue;
+        }
+      }
+
+      return attachExtras(
+        {
+          id: `insight-${new Date().toISOString().slice(0, 10)}`,
+          text: parsed.insight,
+          provider: 'openrouter',
+        },
+        preferences,
+        {
+          socialText: parsed.social,
+          funFactText: parsed.funFact,
+          provider: 'openrouter',
+        }
+      );
     } catch (err) {
       lastError = err;
       const status = err.status;
       const retryable =
-        !status || status === 429 || status >= 500 || /Empty insight|Incomplete insight/.test(err.message);
+        !status ||
+        status === 429 ||
+        status >= 500 ||
+        /Empty insight|Incomplete insight|Missing social|Missing funFact/.test(err.message);
       if (!retryable || attempt === 2) break;
       await sleep(700 * 2 ** attempt);
     }

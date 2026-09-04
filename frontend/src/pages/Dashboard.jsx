@@ -109,7 +109,7 @@ export default function Dashboard() {
   const contentTypes = data?.preferences?.contentTypes || [];
   const wantsCharts = contentTypes.includes('Charts') && sections.charts;
   const wantsSocial = contentTypes.includes('Social') && sections.insight?.social;
-  const wantsFunFact = contentTypes.includes('Fun') && sections.meme?.funFact;
+  const wantsFunFact = contentTypes.includes('Fun') && sections.insight?.funFact;
 
   return (
     <div className="dash-shell">
@@ -166,7 +166,13 @@ export default function Dashboard() {
             title={sections.insight.title}
             provider={sections.insight.provider}
             itemId={sections.insight.id}
-            snapshot={[sections.insight.text, sections.insight.social?.text].filter(Boolean).join(' | ')}
+            snapshot={[
+              sections.insight.text,
+              sections.insight.social?.text,
+              sections.insight.funFact?.text,
+            ]
+              .filter(Boolean)
+              .join(' | ')}
             onVote={onVote}
           >
             <p className="insight-text">{sections.insight.text}</p>
@@ -174,6 +180,12 @@ export default function Dashboard() {
               <div className="social-buzz">
                 <p className="social-buzz__label">Social buzz</p>
                 <p className="social-buzz__text">{sections.insight.social.text}</p>
+              </div>
+            ) : null}
+            {wantsFunFact ? (
+              <div className="fun-fact">
+                <p className="fun-fact__label">Fun fact</p>
+                <p className="fun-fact__text">{sections.insight.funFact.text}</p>
               </div>
             ) : null}
           </SectionCard>
@@ -223,19 +235,13 @@ export default function Dashboard() {
             title={sections.meme.title}
             provider={sections.meme.provider}
             itemId={sections.meme.id}
-            snapshot={[sections.meme.memeTitle, sections.meme.funFact?.text].filter(Boolean).join(' | ')}
+            snapshot={sections.meme.memeTitle || ''}
             onVote={onVote}
           >
             <figure className="meme-figure">
               <img src={sections.meme.imageUrl} alt={sections.meme.alt || sections.meme.memeTitle} />
               <figcaption>{sections.meme.memeTitle}</figcaption>
             </figure>
-            {wantsFunFact ? (
-              <div className="fun-fact">
-                <p className="fun-fact__label">Fun fact</p>
-                <p className="fun-fact__text">{sections.meme.funFact.text}</p>
-              </div>
-            ) : null}
           </SectionCard>
         </div>
       </main>

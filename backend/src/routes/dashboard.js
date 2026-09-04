@@ -4,9 +4,8 @@ const DailyCache = require('../models/DailyCache');
 const { authRequired } = require('../middleware/auth');
 const { fetchPrices, fetchSparklines } = require('../services/coingecko');
 const { fetchNews } = require('../services/news');
+const { pickMeme } = require('../services/memes');
 const { generateInsight } = require('../services/ai');
-const { pickMeme, pickFunFact } = require('../services/memes');
-const { pickSocialBuzz } = require('../services/social');
 
 const router = express.Router();
 
@@ -57,8 +56,6 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
   const assets = preferences.assets;
   const contentTypes = preferences.contentTypes || [];
   const wantsCharts = contentTypes.includes('Charts');
-  const wantsFun = contentTypes.includes('Fun');
-  const wantsSocial = contentTypes.includes('Social');
 
   const [prices, newsResult] = await Promise.all([fetchPrices(assets), fetchNews(assets)]);
 
@@ -92,7 +89,8 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
       title: 'AI Insight of the Day',
       provider: insight.provider,
       text: insight.text,
-      social: null,
+      social: insight.social || null,
+      funFact: insight.funFact || null,
     },
   };
 
@@ -113,15 +111,6 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
     };
   }
 
-  if (wantsSocial) {
-    const social = pickSocialBuzz(assets);
-    sections.insight.social = {
-      id: social.id,
-      text: social.text,
-      provider: social.provider,
-    };
-  }
-
   const meme = pickMeme(Date.now());
   sections.meme = {
     id: `${meme.id}-${Date.now()}`,
@@ -130,12 +119,6 @@ async function buildDashboard(userId, { forceRefresh = false } = {}) {
     memeTitle: meme.title,
     imageUrl: meme.imageUrl,
     alt: meme.alt,
-    funFact: wantsFun
-      ? (() => {
-          const funFact = pickFunFact(Date.now());
-          return { id: funFact.id, text: funFact.text };
-        })()
-      : null,
   };
 
   const payload = {
