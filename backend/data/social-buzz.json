@@ -1,0 +1,27 @@
+[
+  {
+    "id": "social-1",
+    "assets": ["bitcoin", "ethereum"],
+    "text": "Community buzz: traders are debating whether ETF inflows can keep supporting BTC while ETH chatter focuses on L2 fees and staking yields."
+  },
+  {
+    "id": "social-2",
+    "assets": ["solana"],
+    "text": "On X and Reddit, Solana threads are loud about throughput and meme-coin rotations — sentiment flips fast."
+  },
+  {
+    "id": "social-3",
+    "assets": ["dogecoin"],
+    "text": "Social chatter around DOGE spikes whenever meme season returns — treat hype as noise unless volume confirms."
+  },
+  {
+    "id": "social-4",
+    "assets": ["cardano", "ripple", "chainlink", "avalanche-2"],
+    "text": "Alt communities are active with upgrade rumors and partnership posts — verify claims before reacting."
+  },
+  {
+    "id": "social-5",
+    "assets": [],
+    "text": "Across crypto Twitter/Reddit, risk appetite looks mixed: some posts call for higher highs, others warn of crowded leverage."
+  }
+]

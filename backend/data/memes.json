@@ -1,0 +1,50 @@
+[
+  {
+    "id": "meme-1",
+    "title": "HODL through the dip",
+    "imageUrl": "https://placehold.co/640x360/1b4332/d8f3dc?text=HODL",
+    "alt": "HODL meme"
+  },
+  {
+    "id": "meme-2",
+    "title": "Buy high, sell low (the classic)",
+    "imageUrl": "https://placehold.co/640x360/081c15/95d5b2?text=Buy+High+Sell+Low",
+    "alt": "Classic trading meme"
+  },
+  {
+    "id": "meme-3",
+    "title": "When gas fees cost more than the NFT",
+    "imageUrl": "https://placehold.co/640x360/2d6a4f/b7e4c7?text=Gas+Fees",
+    "alt": "Gas fees meme"
+  },
+  {
+    "id": "meme-4",
+    "title": "This is fine (crypto edition)",
+    "imageUrl": "https://placehold.co/640x360/40916c/d8f3dc?text=This+Is+Fine",
+    "alt": "This is fine meme"
+  },
+  {
+    "id": "meme-5",
+    "title": "To the moon",
+    "imageUrl": "https://placehold.co/640x360/52b788/081c15?text=To+The+Moon",
+    "alt": "To the moon meme"
+  },
+  {
+    "id": "meme-6",
+    "title": "Wen lambo?",
+    "imageUrl": "https://placehold.co/640x360/74c69d/081c15?text=Wen+Lambo",
+    "alt": "Wen lambo meme"
+  },
+  {
+    "id": "meme-7",
+    "title": "NGMI vs WAGMI",
+    "imageUrl": "https://placehold.co/640x360/95d5b2/081c15?text=WAGMI",
+    "alt": "WAGMI meme"
+  },
+  {
+    "id": "meme-8",
+    "title": "Chart goes brrr",
+    "imageUrl": "https://placehold.co/640x360/d8f3dc/1b4332?text=Chart+Goes+Brrr",
+    "alt": "Chart meme"
+  }
+]

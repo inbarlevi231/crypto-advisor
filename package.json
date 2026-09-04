@@ -1,0 +1,10 @@
+{
+  "name": "crypto-advisor",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  }
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "static-1",
+    "title": "Bitcoin consolidation continues as markets await macro cues",
+    "url": "https://www.coindesk.com/",
+    "source": "Static Fallback",
+    "currencies": ["BTC", "bitcoin"]
+  },
+  {
+    "id": "static-2",
+    "title": "Ethereum ecosystem activity remains strong amid L2 growth",
+    "url": "https://ethereum.org/",
+    "source": "Static Fallback",
+    "currencies": ["ETH", "ethereum"]
+  },
+  {
+    "id": "static-3",
+    "title": "Solana DeFi volumes tick higher as traders rotate into alts",
+    "url": "https://solana.com/",
+    "source": "Static Fallback",
+    "currencies": ["SOL", "solana"]
+  },
+  {
+    "id": "static-4",
+    "title": "NFT volumes stabilize as collectors focus on blue-chip collections",
+    "url": "https://opensea.io/",
+    "source": "Static Fallback",
+    "currencies": ["ETH", "ethereum"]
+  },
+  {
+    "id": "static-5",
+    "title": "Stablecoin settlement volumes highlight crypto's payment use case",
+    "url": "https://www.coingecko.com/",
+    "source": "Static Fallback",
+    "currencies": ["USDT", "USDC"]
+  },
+  {
+    "id": "static-6",
+    "title": "Regulatory clarity remains a top theme for institutional crypto desks",
+    "url": "https://www.coindesk.com/",
+    "source": "Static Fallback",
+    "currencies": ["BTC", "ETH"]
+  }
+]
