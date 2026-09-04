@@ -12,9 +12,23 @@ const feedbackRoutes = require('./routes/feedback');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'http://localhost:5173',
+  'https://crypto-advisor-nine.vercel.app',
+]
+  .filter(Boolean)
+  .map((origin) => origin.replace(/\/$/, ''));
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin(origin, callback) {
+      // Allow non-browser clients (no Origin header) and configured frontends
+      if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
