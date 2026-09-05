@@ -21,6 +21,7 @@ export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,7 +36,7 @@ export default function Signup() {
     setError('');
     setErrorCode('');
     try {
-      if (!fullName || !email || !password) {
+      if (!fullName || !email || !password || !confirmPassword) {
         throw Object.assign(new Error('Please fill in full name, email, and password.'), {
           code: 'MISSING_FIELDS',
         });
@@ -53,6 +54,11 @@ export default function Signup() {
       if (password.length < 6) {
         throw Object.assign(new Error('Password must be at least 6 characters.'), {
           code: 'WEAK_PASSWORD',
+        });
+      }
+      if (password !== confirmPassword) {
+        throw Object.assign(new Error('Passwords do not match.'), {
+          code: 'PASSWORD_MISMATCH',
         });
       }
 
@@ -96,6 +102,17 @@ export default function Signup() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              required
+              minLength={6}
+            />
+          </label>
+          <label>
+            Confirm password
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               autoComplete="new-password"
               required
               minLength={6}

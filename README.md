@@ -20,7 +20,7 @@ Personalized crypto investor dashboard: short onboarding quiz, daily curated sec
 ## Features
 
 1. **Auth** — register / login with full name (first + last), email, password; JWT sessions
-2. **Signup UX** — password tooltip (min 6 characters); clear structured error codes
+2. **Signup UX** — confirm password; password tooltip (min 6 characters); clear structured error codes
 3. **Forgot password** — reset with email + full name + new password (no email sending); new-password tooltip
 4. **Onboarding** — assets, investor type, content types → saved as preferences; editable later from the dashboard
 5. **Daily dashboard** (two stacked columns: News → Insight | Prices → Meme):
