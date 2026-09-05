@@ -1,6 +1,6 @@
 # SignalDesk — AI Crypto Advisor
 
-Personalized crypto investor dashboard: short onboarding quiz, daily curated sections (news, prices, AI insight, meme), optional Social / Fun / Charts extras, and thumbs up/down feedback for future model improvement.
+Personalized crypto investor dashboard: short onboarding quiz, daily curated sections (news, prices, AI insight, meme), optional Social / Fun / Charts extras, and thumbs up/down feedback.
 
 ## Live demo
 
@@ -33,7 +33,7 @@ Personalized crypto investor dashboard: short onboarding quiz, daily curated sec
    - **Social** — static social-buzz blurb under the insight
    - **Fun** — static fun fact under the meme
 7. **Refresh** — force rebuild of today’s desk (`?refresh=1`)
-8. **Feedback** — thumbs up/down per section, stored for future ranking / training
+8. **Feedback** — thumbs up/down per section, stored in MongoDB
 
 ## Local setup
 
@@ -122,14 +122,3 @@ Live providers use short in-memory caching and retries. Dashboard daily cache is
 - **Frontend (Vercel):** set `VITE_API_URL` to the Render API `/api` URL
 - **Backend (Render):** set all backend env vars; `CLIENT_URL` must be the Vercel origin
 - **MongoDB Atlas:** allow network access from Render (e.g. `0.0.0.0/0` for simple demos)
-
-## Bonus — feedback for future model training
-
-Votes are stored as labeled examples: `{ userId, preferences context, section, itemId, contentSnapshot, vote }`.
-
-A practical improvement loop (not implemented here):
-
-1. Aggregate preferences + votes into training rows.
-2. Train a lightweight ranker on user features (assets, investor type, contentTypes).
-3. Re-rank candidate content online; keep collecting votes.
-4. Optionally feed high-confidence examples into the insight prompt.
